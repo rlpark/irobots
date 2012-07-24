@@ -15,7 +15,7 @@ import rlpark.plugin.rltoys.utils.Utils;
 import rlpark.plugin.robot.helpers.Robots;
 import rlpark.plugin.robot.interfaces.RobotLive;
 import zephyr.plugin.core.ZephyrCore;
-import zephyr.plugin.core.api.synchronization.Closeable;
+import zephyr.plugin.core.api.synchronization.Clock;
 import zephyr.plugin.core.internal.actions.RestartAction;
 import zephyr.plugin.core.internal.actions.TerminateAction;
 import zephyr.plugin.core.internal.helpers.ClassViewProvider;
@@ -25,7 +25,7 @@ import zephyr.plugin.core.internal.observations.SensorTextGroup.TextClient;
 import zephyr.plugin.core.internal.views.Restartable;
 
 @SuppressWarnings("restriction")
-public abstract class IRobotView extends EnvironmentView<RobotLive> implements Closeable, Restartable {
+public abstract class IRobotView extends EnvironmentView<RobotLive> implements Restartable {
   static abstract public class IRobotViewProvider extends ClassViewProvider {
     public IRobotViewProvider() {
       super(RobotLive.class);
@@ -37,18 +37,17 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
     private final int labelIndex;
     private final String suffix;
 
-    public IntegerTextClient(String obsLabel, String textLabel) {
-      this(obsLabel, textLabel, "0");
+    public IntegerTextClient(Legend legend, String obsLabel, String textLabel) {
+      this(legend, obsLabel, textLabel, "0");
     }
 
-    public IntegerTextClient(String obsLabel, String textLabel, String defaultString) {
-      this(obsLabel, textLabel, "0", "");
+    public IntegerTextClient(Legend legend, String obsLabel, String textLabel, String defaultString) {
+      this(legend, obsLabel, textLabel, "0", "");
     }
 
-    @SuppressWarnings("synthetic-access")
-    public IntegerTextClient(String obsLabel, String textLabel, String defaultString, String suffix) {
+    public IntegerTextClient(Legend legend, String obsLabel, String textLabel, String defaultString, String suffix) {
       super(textLabel);
-      labelIndex = instance.current().legend().indexOf(obsLabel);
+      labelIndex = legend.indexOf(obsLabel);
       this.defaultString = defaultString;
       this.suffix = suffix;
       assert labelIndex >= 0;
@@ -65,6 +64,7 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
   protected double[] currentObservation;
   private final TerminateAction terminateAction;
   private final RestartAction restartAction;
+  String filepath;
 
   public IRobotView() {
     terminateAction = new TerminateAction(this);
@@ -79,13 +79,13 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
     toolBarManager.add(terminateAction);
   }
 
-  protected SensorGroup createSensorGroup(String title, String prefix) {
-    return new SensorGroup(title, startsWith(prefix));
+  protected SensorGroup createSensorGroup(Legend legend, String title, String prefix) {
+    return new SensorGroup(title, startsWith(legend, prefix));
   }
 
-  private int[] startsWith(String prefix) {
+  private int[] startsWith(Legend legend, String prefix) {
     List<Integer> result = new ArrayList<Integer>();
-    for (Map.Entry<String, Integer> entry : legend().legend().entrySet()) {
+    for (Map.Entry<String, Integer> entry : legend.legend().entrySet()) {
       String label = entry.getKey();
       if (label.startsWith(prefix))
         result.add(entry.getValue());
@@ -94,27 +94,24 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
     return Utils.asIntArray(result);
   }
 
-  protected Legend legend() {
-    return instance.current().legend();
-  }
-
   @Override
-  public boolean synchronize() {
-    currentObservation = Robots.toDoubles(instance.current().lastReceivedRawObs());
+  public boolean synchronize(RobotLive current) {
+    currentObservation = Robots.toDoubles(current.lastReceivedRawObs());
     synchronize(currentObservation);
     return true;
   }
 
   @Override
-  protected void setLayout() {
-    super.setLayout();
-    restartAction.setEnabled(instance.current() instanceof IRobotLogFile);
+  protected void setLayout(Clock clock, RobotLive current) {
+    super.setLayout(clock, current);
+    boolean restartable = current instanceof IRobotLogFile;
+    filepath = restartable ? ((IRobotLogFile) current).filepath() : null;
+    restartAction.setEnabled(restartable);
     terminateAction.setEnabled(true);
-    setViewTitle();
+    setViewTitle(current);
   }
 
-  private void setViewTitle() {
-    RobotLive robot = instance.current();
+  private void setViewTitle(RobotLive robot) {
     if (robot == null) {
       setViewName("Observation", "");
       return;
@@ -134,9 +131,7 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
 
   @Override
   public void restart() {
-    if (!(instance.current() instanceof IRobotLogFile))
-      return;
-    final String filepath = ((IRobotLogFile) instance.current()).filepath();
+    assert filepath != null;
     close();
     ZephyrCore.start(new Runnable() {
       @Override
@@ -144,10 +139,5 @@ public abstract class IRobotView extends EnvironmentView<RobotLive> implements C
         IRobotLogFileHandler.handle(filepath);
       }
     });
-  }
-
-  @Override
-  public void close() {
-    instance.unset();
   }
 }

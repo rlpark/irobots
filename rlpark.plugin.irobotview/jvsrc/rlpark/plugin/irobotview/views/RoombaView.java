@@ -36,6 +36,7 @@ import static rlpark.plugin.irobot.data.IRobotLabels.WheelEncoder;
 import static rlpark.plugin.irobot.data.IRobotLabels.WheelMotorCurrent;
 import static rlpark.plugin.irobot.data.IRobotLabels.WheelRequested;
 import rlpark.plugin.irobot.data.IRobotLabels;
+import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.robot.interfaces.RobotLive;
 import zephyr.plugin.core.api.internal.codeparser.codetree.ClassNode;
 import zephyr.plugin.core.api.internal.codeparser.interfaces.CodeNode;
@@ -68,58 +69,64 @@ public class RoombaView extends IRobotView {
   }
 
   @Override
-  protected ObsLayout getObservationLayout() {
-    SensorTextGroup infoGroup = createInfoGroup();
-    SensorCollection wallCollection = new SensorCollection("Walls", createSensorGroup("Virtual", WallVirtual),
-                                                           createSensorGroup("Sensor", WallSensor),
-                                                           createSensorGroup("Signal", WallSignal));
-    SensorCollection odoCollection = new SensorCollection("Odometry", createSensorGroup("Distance", DriveDistance),
-                                                          createSensorGroup("Angle", DriveAngle),
-                                                          createSensorGroup("Requested", DriveRequested));
-    SensorCollection icCollection = new SensorCollection("Infrared Character", createSensorGroup("Omni", ICOmni),
-                                                         createSensorGroup("Left", ICLeft), createSensorGroup("Right",
-                                                                                                              ICRight));
-    SensorCollection powerCollection = new SensorCollection("Battery", createSensorGroup("Current", BatteryCurrent),
-                                                            createSensorGroup("Temperature", BatteryTemperature),
-                                                            createSensorGroup("Charge", BatteryCharge),
-                                                            createSensorGroup("Capacity", BatteryCapacity));
-    SensorCollection cliffCollection = new SensorCollection("Cliffs", createSensorGroup("Sensors", CliffSensor),
-                                                            createSensorGroup("Signal", CliffSignal));
-    SensorCollection wheelCollection = new SensorCollection("Wheels", createSensorGroup("Dropped", WheelDrop),
-                                                            createSensorGroup("Requested", WheelRequested),
-                                                            createSensorGroup("Encoder", WheelEncoder),
-                                                            createSensorGroup("Current", WheelMotorCurrent));
-    SensorCollection lightBumperCollection = new SensorCollection("Light Bumper", createSensorGroup("Sensor",
+  protected ObsLayout getObservationLayout(Clock clock, RobotLive robot) {
+    Legend legend = robot.legend();
+    SensorTextGroup infoGroup = createInfoGroup(clock, robot.legend());
+    SensorCollection wallCollection = new SensorCollection("Walls", createSensorGroup(legend, "Virtual", WallVirtual),
+                                                           createSensorGroup(legend, "Sensor", WallSensor),
+                                                           createSensorGroup(legend, "Signal", WallSignal));
+    SensorCollection odoCollection = new SensorCollection("Odometry", createSensorGroup(legend, "Distance",
+                                                                                        DriveDistance),
+                                                          createSensorGroup(legend, "Angle", DriveAngle),
+                                                          createSensorGroup(legend, "Requested", DriveRequested));
+    SensorCollection icCollection = new SensorCollection("Infrared Character",
+                                                         createSensorGroup(legend, "Omni", ICOmni),
+                                                         createSensorGroup(legend, "Left", ICLeft),
+                                                         createSensorGroup(legend, "Right", ICRight));
+    SensorCollection powerCollection = new SensorCollection(
+                                                            "Battery",
+                                                            createSensorGroup(legend, "Current", BatteryCurrent),
+                                                            createSensorGroup(legend, "Temperature", BatteryTemperature),
+                                                            createSensorGroup(legend, "Charge", BatteryCharge),
+                                                            createSensorGroup(legend, "Capacity", BatteryCapacity));
+    SensorCollection cliffCollection = new SensorCollection("Cliffs",
+                                                            createSensorGroup(legend, "Sensors", CliffSensor),
+                                                            createSensorGroup(legend, "Signal", CliffSignal));
+    SensorCollection wheelCollection = new SensorCollection("Wheels", createSensorGroup(legend, "Dropped", WheelDrop),
+                                                            createSensorGroup(legend, "Requested", WheelRequested),
+                                                            createSensorGroup(legend, "Encoder", WheelEncoder),
+                                                            createSensorGroup(legend, "Current", WheelMotorCurrent));
+    SensorCollection lightBumperCollection = new SensorCollection("Light Bumper", createSensorGroup(legend, "Sensor",
                                                                                                     LightBumpSensor),
-                                                                  createSensorGroup("Signal", LightBumpSignal));
-    SensorCollection motorCurrentCollection = new SensorCollection("Brushes", createSensorGroup("Main",
+                                                                  createSensorGroup(legend, "Signal", LightBumpSignal));
+    SensorCollection motorCurrentCollection = new SensorCollection("Brushes", createSensorGroup(legend, "Main",
                                                                                                 MotorCurrentMainBrush),
-                                                                   createSensorGroup("Side", MotorCurrentSideBrush));
+                                                                   createSensorGroup(legend, "Side",
+                                                                                     MotorCurrentSideBrush));
     return new ObsLayout(new ObsWidget[][] {
-        { infoGroup, createSensorGroup("Bumper", Bump), wheelCollection, odoCollection,
-            createSensorGroup("Dirt", DirtDetect) },
-        { icCollection, cliffCollection, createSensorGroup("Buttons", Button), motorCurrentCollection,
-            createSensorGroup("Statis", Stasis) }, { wallCollection, lightBumperCollection, powerCollection } });
+        { infoGroup, createSensorGroup(legend, "Bumper", Bump), wheelCollection, odoCollection,
+            createSensorGroup(legend, "Dirt", DirtDetect) },
+        { icCollection, cliffCollection, createSensorGroup(legend, "Buttons", Button), motorCurrentCollection,
+            createSensorGroup(legend, "Statis", Stasis) }, { wallCollection, lightBumperCollection, powerCollection } });
   }
 
-  private SensorTextGroup createInfoGroup() {
+  private SensorTextGroup createInfoGroup(final Clock clock, Legend legend) {
     TextClient loopTimeTextClient = new TextClient("Loop Time:") {
-      @SuppressWarnings("synthetic-access")
       @Override
       public String currentText() {
-        Clock clock = instance.clock();
-        if (clock == null)
-          return "0000ms";
         return Chrono.toPeriodString(clock.lastPeriodNano());
       }
     };
-    return new SensorTextGroup("Info", loopTimeTextClient, new IntegerTextClient(ChargingState, "Charging State:"),
-                               new IntegerTextClient(BatteryVoltage, "Voltage:", "00000", "mV"),
-                               new IntegerTextClient(ConnectedHomeBase, "Home base: "),
-                               new IntegerTextClient(ConnectedInternalCharger, "Internal charger: "),
-                               new IntegerTextClient(OIMode, "OI Mode: "), new IntegerTextClient(SongNumber, "Song: "),
-                               new IntegerTextClient(SongPlaying, "Playing: "),
-                               new IntegerTextClient(NumberStreamPackets, "Packets: "));
+    return new SensorTextGroup("Info", loopTimeTextClient, new IntegerTextClient(legend, ChargingState,
+                                                                                 "Charging State:"),
+                               new IntegerTextClient(legend, BatteryVoltage, "Voltage:", "00000", "mV"),
+                               new IntegerTextClient(legend, ConnectedHomeBase, "Home base: "),
+                               new IntegerTextClient(legend, ConnectedInternalCharger, "Internal charger: "),
+                               new IntegerTextClient(legend, OIMode, "OI Mode: "), new IntegerTextClient(legend,
+                                                                                                         SongNumber,
+                                                                                                         "Song: "),
+                               new IntegerTextClient(legend, SongPlaying, "Playing: "),
+                               new IntegerTextClient(legend, NumberStreamPackets, "Packets: "));
   }
 
   @Override
