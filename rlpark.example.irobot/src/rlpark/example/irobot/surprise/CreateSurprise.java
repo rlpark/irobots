@@ -17,6 +17,7 @@ import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.rltoys.envio.observations.ObsFilter;
 import rlpark.plugin.rltoys.envio.observations.Observation;
 import rlpark.plugin.rltoys.envio.policy.ActionPolicy;
+import rlpark.plugin.rltoys.envio.policy.Policies;
 import rlpark.plugin.rltoys.envio.policy.Policy;
 import rlpark.plugin.rltoys.horde.Horde;
 import rlpark.plugin.rltoys.horde.Surprise;
@@ -104,7 +105,7 @@ public class CreateSurprise implements Runnable {
       double surpriseMeasure = surprise.updateSurpriseMeasure();
       if (surpriseMeasure > 8.0)
         robot.playSong(IRobotSongs.composeHappySong());
-      Action a_tp1 = robotBehaviour.decide(x_tp1);
+      Action a_tp1 = Policies.decide(robotBehaviour, x_tp1);
       robot.sendAction((CreateAction) a_tp1);
       x_t = x_tp1;
       a_t = a_tp1;

@@ -20,6 +20,7 @@ import rlpark.plugin.rltoys.algorithms.representations.ltu.units.LTUAdaptive;
 import rlpark.plugin.rltoys.algorithms.traces.RTraces;
 import rlpark.plugin.rltoys.envio.actions.Action;
 import rlpark.plugin.rltoys.envio.observations.Legend;
+import rlpark.plugin.rltoys.envio.policy.Policies;
 import rlpark.plugin.rltoys.horde.demons.DemonScheduler;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemon;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemonVerifier;
@@ -140,7 +141,7 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
       updateDemons(x_t, a_t, x_tp1);
       if (clock.timeStep() % 1000 == 0)
         discovery.changeRepresentation(1);
-      a_t = policy.decide(x_tp1);
+      a_t = Policies.decide(policy, x_tp1);
       environment.sendAction((CreateAction) a_t);
       x_t = x_tp1;
     }

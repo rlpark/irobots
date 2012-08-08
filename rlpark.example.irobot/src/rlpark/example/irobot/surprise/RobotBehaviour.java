@@ -5,6 +5,7 @@ import java.util.Random;
 import rlpark.plugin.rltoys.envio.actions.Action;
 import rlpark.plugin.rltoys.envio.policy.Policy;
 import rlpark.plugin.rltoys.math.vector.RealVector;
+import rlpark.plugin.rltoys.utils.NotImplemented;
 import rlpark.plugin.rltoys.utils.Utils;
 import zephyr.plugin.core.api.synchronization.Chrono;
 
@@ -23,16 +24,20 @@ public class RobotBehaviour implements Policy {
   }
 
   @Override
-  public double pi(RealVector s, Action a) {
-    return 1.0;
+  public double pi(Action a) {
+    throw new NotImplemented();
   }
 
   @Override
-  public Action decide(RealVector s) {
+  public Action sampleAction() {
     if (currentAction != null && chrono.getCurrentChrono() < actionDuration)
       return currentAction;
     currentAction = Utils.choose(random, actions);
     chrono.start();
     return currentAction;
+  }
+
+  @Override
+  public void update(RealVector x) {
   }
 }
