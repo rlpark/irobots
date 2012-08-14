@@ -21,14 +21,14 @@ import rlpark.plugin.rltoys.algorithms.traces.RTraces;
 import rlpark.plugin.rltoys.envio.actions.Action;
 import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.rltoys.envio.policy.Policies;
-import rlpark.plugin.rltoys.horde.demons.DemonScheduler;
+import rlpark.plugin.rltoys.horde.Horde;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemon;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemonVerifier;
 import rlpark.plugin.rltoys.horde.functions.RewardFunction;
 import rlpark.plugin.rltoys.horde.functions.RewardObservationFunction;
 import rlpark.plugin.rltoys.math.GrayCode;
-import rlpark.plugin.rltoys.math.vector.RealVector;
 import rlpark.plugin.rltoys.math.vector.implementations.BVector;
+import rlpark.plugin.rltoys.utils.Utils;
 import rlpark.plugin.robot.observations.ObservationVersatile;
 import zephyr.plugin.core.api.Zephyr;
 import zephyr.plugin.core.api.labels.Labels;
@@ -49,9 +49,7 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
   private final RandomPolicy policy = new RandomPolicy(random, CreateAction.AllActions);
   private final int rawObsVectorSize = environment.observationPacketSize() * 8;
   private final LTU prototype = new LTUAdaptive(MinDensity, MaxDensity, 0.99, .001);
-  private final DemonScheduler demonScheduler = new DemonScheduler();
-  private final List<PredictionDemon> demons;
-  private final RewardObservationFunction[] rewardFunctions;
+  private final Horde horde;
   private final PredictionDemonVerifier[] verifiers;
   private final StateUpdate stateUpdate;
   private final RepresentationDiscovery discovery;
@@ -63,24 +61,26 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
     RandomNetwork representation = new AutoRegulatedNetwork(random, NetworkOutputVectorSize + rawObsVectorSize + 1,
                                                             NetworkOutputVectorSize, MinDensity, MaxDensity);
     stateUpdate = new StateUpdate(representation, rawObsVectorSize);
-    rewardFunctions = createRewardFunctions(environment.legend());
+    List<RewardObservationFunction> rewardFunctions = createRewardFunctions(environment.legend());
     int stateVectorSize = stateUpdate.stateSize();
-    demons = createNextingDemons(Gammas, MaxDensity * stateVectorSize, stateVectorSize);
-    verifiers = createDemonVerifiers();
-    WeightSorter sorter = new WeightSorter(extractLinearLearners(), 0, representation.outputSize);
+    List<PredictionDemon> demons = createNextingDemons(rewardFunctions, Gammas, MaxDensity * stateVectorSize,
+                                                       stateVectorSize);
+    horde = new Horde(demons, rewardFunctions);
+    verifiers = createDemonVerifiers(demons);
+    WeightSorter sorter = new WeightSorter(extractLinearLearners(demons), 0, representation.outputSize);
     discovery = new RepresentationDiscovery(random, representation, sorter, prototype, NetworkOutputVectorSize / 10, 5);
     discovery.fillNetwork();
     Zephyr.advertise(clock, this);
   }
 
-  private LinearLearner[] extractLinearLearners() {
+  private LinearLearner[] extractLinearLearners(List<PredictionDemon> demons) {
     LinearLearner[] learners = new LinearLearner[demons.size()];
     for (int i = 0; i < learners.length; i++)
       learners[i] = demons.get(i).learner();
     return learners;
   }
 
-  private PredictionDemonVerifier[] createDemonVerifiers() {
+  private PredictionDemonVerifier[] createDemonVerifiers(List<PredictionDemon> demons) {
     PredictionDemonVerifier[] verifiers = new PredictionDemonVerifier[demons.size()];
     for (int i = 0; i < verifiers.length; i++) {
       verifiers[i] = new PredictionDemonVerifier(demons.get(i));
@@ -88,25 +88,21 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
     return verifiers;
   }
 
-  @LabelProvider(ids = { "rewardFunctions" })
-  String rewardLabelOf(int rewardIndex) {
-    return Labels.label(rewardFunctions[rewardIndex].label());
+  @LabelProvider(ids = { "verifiers" })
+  String labelOf(int index) {
+    return Labels.label(horde.demonLabel(index));
   }
 
-  @LabelProvider(ids = { "verifiers", "demons" })
-  String labelOf(int demonIndex) {
-    return Labels.label(demons.get(demonIndex));
-  }
-
-  private RewardObservationFunction[] createRewardFunctions(Legend legend) {
+  private List<RewardObservationFunction> createRewardFunctions(Legend legend) {
     List<String> labels = legend.getLabels();
     RewardObservationFunction[] rewardFunctions = new RewardObservationFunction[labels.size()];
     for (int i = 0; i < rewardFunctions.length; i++)
       rewardFunctions[i] = new RewardObservationFunction(legend, labels.get(i));
-    return rewardFunctions;
+    return Utils.asList(rewardFunctions);
   }
 
-  private List<PredictionDemon> createNextingDemons(double[] gammas, double stateFeatureNorm, int vectorSize) {
+  private List<PredictionDemon> createNextingDemons(List<RewardObservationFunction> rewardFunctions, double[] gammas,
+      double stateFeatureNorm, int vectorSize) {
     List<PredictionDemon> demons = new ArrayList<PredictionDemon>();
     for (RewardFunction rewardFunction : rewardFunctions) {
       for (double gamma : gammas) {
@@ -119,26 +115,15 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
     return demons;
   }
 
-  protected void updateDemons(RealVector x_t, Action a_t, RealVector x_tp1) {
-    demonScheduler.update(demons, x_t, a_t, x_tp1);
-    for (PredictionDemonVerifier verifier : verifiers) {
-      error = verifier.update(false);
-    }
-  }
-
-  protected void updateRewards(double[] o_tp1) {
-    for (RewardObservationFunction rewardFunction : rewardFunctions)
-      rewardFunction.update(o_tp1);
-  }
-
   @Override
   public void run() {
     while (!environment.isClosed() && clock.tick()) {
       ObservationVersatile lastObs = environment.waitNewRawObs().last();
-      updateRewards(lastObs.doubleValues());
       BVector binaryObs = BVector.toBinary(GrayCode.toGrayCode(lastObs.rawData()));
       BVector x_tp1 = stateUpdate.updateState(binaryObs);
-      updateDemons(x_t, a_t, x_tp1);
+      horde.update(lastObs, x_t, a_t, x_tp1);
+      for (PredictionDemonVerifier verifier : verifiers)
+        error = verifier.update(false);
       if (clock.timeStep() % 1000 == 0)
         discovery.changeRepresentation(1);
       a_t = Policies.decide(policy, x_tp1);

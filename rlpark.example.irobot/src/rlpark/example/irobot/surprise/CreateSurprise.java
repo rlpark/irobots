@@ -71,7 +71,7 @@ public class CreateSurprise implements Runnable {
           demons.add(newOffPolicyPredictionDemon(rewardFunction, gamma, targetPolicy));
       }
     }
-    return new Horde(demons, rewardFunctions, null, null);
+    return new Horde(demons, rewardFunctions);
   }
 
   private PredictionOffPolicyDemon newOffPolicyPredictionDemon(RewardFunction rewardFunction, double gamma,
