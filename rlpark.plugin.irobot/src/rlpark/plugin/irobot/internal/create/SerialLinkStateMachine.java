@@ -1,4 +1,4 @@
-package rlpark.plugin.irobot.internal.statemachine;
+package rlpark.plugin.irobot.internal.create;
 
 import gnu.io.SerialPortEvent;
 
@@ -12,7 +12,7 @@ import zephyr.plugin.core.api.signals.Listener;
 import zephyr.plugin.core.api.signals.Signal;
 
 public class SerialLinkStateMachine {
-  public final SerialPortToRobot serialPort;
+  public final SerialPortToCreate serialPort;
   private final StateMachine<Byte> stateMachine;
   public Signal<byte[]> onDataPacket = new Signal<byte[]>();
   private final Listener<SerialPortToRobot> serialListener = new Listener<SerialPortToRobot>() {
@@ -31,15 +31,15 @@ public class SerialLinkStateMachine {
   private final byte[] data;
   private final ChecksumNode checksumNode;
 
-  public SerialLinkStateMachine(SerialPortToRobot serialPort, List<SerialLinkNode> nodes) {
+  public SerialLinkStateMachine(SerialPortToCreate serialPort, List<SerialLinkNode> nodes) {
     this(serialPort, null, nodes);
   }
 
-  public SerialLinkStateMachine(SerialPortToRobot serialPort, ChecksumNode checksumNode, SerialLinkNode... nodes) {
+  public SerialLinkStateMachine(SerialPortToCreate serialPort, ChecksumNode checksumNode, SerialLinkNode... nodes) {
     this(serialPort, checksumNode, Utils.asList(nodes));
   }
 
-  public SerialLinkStateMachine(SerialPortToRobot serialPort, ChecksumNode checksumNode, List<SerialLinkNode> nodes) {
+  public SerialLinkStateMachine(SerialPortToCreate serialPort, ChecksumNode checksumNode, List<SerialLinkNode> nodes) {
     this.serialPort = serialPort;
     dataNodes = createDataNodeList(nodes);
     data = createData(dataNodes);

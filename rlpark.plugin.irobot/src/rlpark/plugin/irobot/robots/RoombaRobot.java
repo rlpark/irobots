@@ -5,7 +5,7 @@ import rlpark.plugin.irobot.data.RoombaLeds;
 import rlpark.plugin.irobot.internal.descriptors.DropDescriptors;
 import rlpark.plugin.irobot.internal.descriptors.RoombaSerialDescriptor;
 import rlpark.plugin.irobot.internal.irobot.IRobotDiscoConnection;
-import rlpark.plugin.irobot.internal.irobot.IRobotSerialConnection;
+import rlpark.plugin.irobot.internal.roomba.RoombaSerialConnection;
 import rlpark.plugin.irobot.internal.server.IRobotDiscoServer;
 import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.robot.observations.ObservationReceiver;
@@ -14,7 +14,7 @@ public class RoombaRobot extends IRobotEnvironment {
   static public final double MaxAction = 200;
 
   public RoombaRobot(String serialPortPath) {
-    this(new IRobotSerialConnection(serialPortPath, new RoombaSerialDescriptor()));
+    this(new RoombaSerialConnection(serialPortPath));
   }
 
   public RoombaRobot(String localhost, int port) {
@@ -26,7 +26,7 @@ public class RoombaRobot extends IRobotEnvironment {
   }
 
   private RoombaRobot(ObservationReceiver receiver) {
-    super(receiver, false);
+    super(receiver, true);
   }
 
   public void sendLeds(RoombaLeds leds) {

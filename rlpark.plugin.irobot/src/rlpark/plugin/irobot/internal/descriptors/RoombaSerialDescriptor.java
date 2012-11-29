@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import rlpark.plugin.irobot.data.IRobotLabels;
+import rlpark.plugin.irobot.internal.create.DataNode;
+import rlpark.plugin.irobot.internal.create.SerialLinkNode;
+import rlpark.plugin.irobot.internal.create.SerialLinkStateMachine;
+import rlpark.plugin.irobot.internal.create.SerialPortToCreate;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot.SerialPortInfo;
-import rlpark.plugin.irobot.internal.statemachine.DataNode;
-import rlpark.plugin.irobot.internal.statemachine.SerialLinkNode;
-import rlpark.plugin.irobot.internal.statemachine.SerialLinkStateMachine;
 import rlpark.plugin.robot.internal.disco.drops.Drop;
 import zephyr.plugin.core.api.signals.Listener;
 
@@ -75,8 +76,8 @@ public class RoombaSerialDescriptor implements IRobotSerialDescriptor {
   private boolean setupFirefly(SerialPortToRobot serialPort) {
     System.out.println("Setting up Roomba's firefly...");
     try {
-      serialPort.sendAndExpect("$$$", "CMD\r\n");
-      serialPort.sendAndExpect("U,115k,N\r", "AOK\r\n");
+      serialPort.sendAndReceive("$$$", "CMD\r\n");
+      serialPort.sendAndReceive("U,115k,N\r", "AOK\r\n");
     } catch (IOException e) {
       System.out.println("Setting up Firefly has failed...");
       if (SetupFireflyMandatory) {
@@ -114,7 +115,8 @@ public class RoombaSerialDescriptor implements IRobotSerialDescriptor {
   public SerialLinkStateMachine createStateMachine(SerialPortToRobot serialPort) {
     List<SerialLinkNode> serialLinkNodes = new ArrayList<SerialLinkNode>();
     serialLinkNodes.add(new DataNode(IRobotLabels.RoombaSensorsPacketSize));
-    SerialLinkStateMachine serialLinkStateMachine = new SerialLinkStateMachine(serialPort, serialLinkNodes);
+    SerialLinkStateMachine serialLinkStateMachine = new SerialLinkStateMachine((SerialPortToCreate) serialPort,
+                                                                               serialLinkNodes);
     serialLinkStateMachine.onDataPacket.connect(packetRequester);
     return serialLinkStateMachine;
   }

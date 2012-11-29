@@ -1,4 +1,4 @@
-package rlpark.plugin.irobot.internal.irobot;
+package rlpark.plugin.irobot.internal.create;
 
 
 import java.io.IOException;
@@ -6,7 +6,6 @@ import java.io.IOException;
 import rlpark.plugin.irobot.internal.descriptors.IRobotObservationReceiver;
 import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
-import rlpark.plugin.irobot.internal.statemachine.SerialLinkStateMachine;
 import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.robot.internal.disco.datagroup.DropScalarGroup;
 import rlpark.plugin.robot.internal.disco.drops.Drop;
@@ -17,8 +16,8 @@ import zephyr.plugin.core.api.signals.Listener;
 import zephyr.plugin.core.api.signals.Signal;
 import zephyr.plugin.core.api.synchronization.Chrono;
 
-public class IRobotSerialConnection implements IRobotObservationReceiver {
-  public Signal<IRobotSerialConnection> onClosed = new Signal<IRobotSerialConnection>();
+public class IRobotCreateSerialConnection implements IRobotObservationReceiver {
+  public Signal<IRobotCreateSerialConnection> onClosed = new Signal<IRobotCreateSerialConnection>();
   private final Drop sensorDrop;
   protected final DropScalarGroup sensors;
   protected SerialPortToRobot serialPort;
@@ -34,7 +33,7 @@ public class IRobotSerialConnection implements IRobotObservationReceiver {
   private final LiteByteBuffer byteBuffer;
   private Chrono timeSinceReset = null;
 
-  public IRobotSerialConnection(String fileName, IRobotSerialDescriptor serialDescriptor) {
+  public IRobotCreateSerialConnection(String fileName, IRobotSerialDescriptor serialDescriptor) {
     this.fileName = fileName;
     sensorDrop = serialDescriptor.createSensorDrop();
     sensors = new DropScalarGroup(sensorDrop);
@@ -90,7 +89,7 @@ public class IRobotSerialConnection implements IRobotObservationReceiver {
     serialPort = SerialPortToRobot.openPort(fileName, serialDescriptor.portInfo());
     if (serialPort == null)
       return;
-    serialPort.onClosed.connect(new Listener<SerialPortToRobot>() {
+    ((SerialPortToCreate) serialPort).onClosed.connect(new Listener<SerialPortToRobot>() {
       @Override
       public void listen(SerialPortToRobot eventInfo) {
         close();

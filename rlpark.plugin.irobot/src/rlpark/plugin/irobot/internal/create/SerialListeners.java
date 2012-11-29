@@ -1,5 +1,6 @@
-package rlpark.plugin.irobot.internal.serial;
+package rlpark.plugin.irobot.internal.create;
 
+import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import zephyr.plugin.core.api.signals.Listener;
 
 public class SerialListeners {
@@ -21,7 +22,7 @@ public class SerialListeners {
       if (!condition.isSatisfied(serialPort))
         return;
       synchronized (serialPort) {
-        nbDataAvailable = serialPort.available();
+        nbDataAvailable = ((SerialPortToCreate) serialPort).available();
         serialPort.notify();
       }
     }
@@ -47,7 +48,7 @@ public class SerialListeners {
 
     @Override
     public void listen(SerialPortToRobot serialPort) {
-      message = serialPort.getAvailableAsString();
+      message = ((SerialPortToCreate) serialPort).getAvailableAsString();
       super.listen(serialPort);
     }
 
@@ -59,7 +60,7 @@ public class SerialListeners {
   static public class PrintReceived implements Listener<SerialPortToRobot> {
     @Override
     public void listen(SerialPortToRobot serialPort) {
-      String available = serialPort.getAvailableAsString();
+      String available = ((SerialPortToCreate) serialPort).getAvailableAsString();
       if (available.length() > 0)
         System.out.println("Recv: " + available);
     }

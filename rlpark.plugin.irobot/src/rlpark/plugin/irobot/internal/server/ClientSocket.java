@@ -2,8 +2,8 @@ package rlpark.plugin.irobot.internal.server;
 
 import java.io.IOException;
 
+import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.DropDescriptors;
-import rlpark.plugin.irobot.internal.irobot.IRobotSerialConnection;
 import rlpark.plugin.robot.internal.disco.drops.Drop;
 import rlpark.plugin.robot.internal.disco.drops.DropByteArray;
 import rlpark.plugin.robot.internal.disco.io.DiscoPacket;
@@ -15,10 +15,10 @@ public class ClientSocket implements Runnable {
   private final Drop sensorDrop;
   private final DropByteArray sensorData;
   private final DiscoSocket socket;
-  private final IRobotSerialConnection serialConnection;
+  private final IRobotCreateSerialConnection serialConnection;
   private boolean wasSendingAction = false;
 
-  public ClientSocket(IRobotSerialConnection serialConnection, DiscoSocket socket) {
+  public ClientSocket(IRobotCreateSerialConnection serialConnection, DiscoSocket socket) {
     this.socket = socket;
     this.serialConnection = serialConnection;
     Drop robotSensorDrop = serialConnection.descriptor().createSensorDrop();

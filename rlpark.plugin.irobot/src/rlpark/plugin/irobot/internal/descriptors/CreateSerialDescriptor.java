@@ -5,12 +5,13 @@ import gnu.io.SerialPort;
 import java.io.IOException;
 
 import rlpark.plugin.irobot.data.IRobotLabels;
+import rlpark.plugin.irobot.internal.create.ChecksumNode;
+import rlpark.plugin.irobot.internal.create.DataNode;
+import rlpark.plugin.irobot.internal.create.HeaderNode;
+import rlpark.plugin.irobot.internal.create.SerialLinkStateMachine;
+import rlpark.plugin.irobot.internal.create.SerialPortToCreate;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot.SerialPortInfo;
-import rlpark.plugin.irobot.internal.statemachine.ChecksumNode;
-import rlpark.plugin.irobot.internal.statemachine.DataNode;
-import rlpark.plugin.irobot.internal.statemachine.HeaderNode;
-import rlpark.plugin.irobot.internal.statemachine.SerialLinkStateMachine;
 import rlpark.plugin.rltoys.utils.Utils;
 import rlpark.plugin.robot.internal.disco.drops.Drop;
 import zephyr.plugin.core.api.signals.Listener;
@@ -62,7 +63,7 @@ public class CreateSerialDescriptor implements IRobotSerialDescriptor {
     });
     DataNode dataNode = new DataNode(IRobotLabels.CreateSensorsPacketSize);
     ChecksumNode checksumNode = new ChecksumNode(Utils.asList(dataNode, headerNode));
-    return new SerialLinkStateMachine(serialPort, checksumNode, headerNode, dataNode);
+    return new SerialLinkStateMachine((SerialPortToCreate) serialPort, checksumNode, headerNode, dataNode);
   }
 
   @Override

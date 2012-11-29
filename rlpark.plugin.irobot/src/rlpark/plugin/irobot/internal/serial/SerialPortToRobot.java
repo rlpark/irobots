@@ -8,24 +8,21 @@ import gnu.io.SerialPortEventListener;
 import gnu.io.UnsupportedCommOperationException;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TooManyListenersException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import rlpark.plugin.irobot.internal.serial.SerialListeners.AlwaysWakeUpThread;
-import rlpark.plugin.irobot.internal.serial.SerialListeners.ReadWhenArriveAndWakeUp;
-import rlpark.plugin.irobot.internal.serial.SerialListeners.SerialInputCondition;
-import rlpark.plugin.irobot.internal.serial.SerialListeners.WakeUpThread;
 import rlpark.plugin.robot.internal.disco.drops.DropByteArray;
 import zephyr.plugin.core.api.signals.Listener;
 import zephyr.plugin.core.api.signals.Signal;
 
 public class SerialPortToRobot implements SerialPortEventListener {
   static public final boolean ExpectedIgnored = false;
-  static public final boolean DebugSignals = false;
-  public final Signal<SerialPortToRobot> onClosed = new Signal<SerialPortToRobot>();
+  static public boolean DebugSignals = false;
 
   public static class SerialPortInfo {
     public int rate = 115200;
@@ -47,12 +44,12 @@ public class SerialPortToRobot implements SerialPortEventListener {
     }
   }
 
+  protected final SerialStreams serialStreams;
   private final String serialPortFileName;
   private final CommPortIdentifier identifier;
   private final SerialPort serialPort;
-  private List<Byte> buffer = new ArrayList<Byte>();
-  private final Map<Integer, Signal<SerialPortToRobot>> signals = new HashMap<Integer, Signal<SerialPortToRobot>>();
-  final SerialStreams serialStreams;
+  private final Map<Integer, Signal<SerialPortToRobot>> signals = Collections
+      .synchronizedMap(new HashMap<Integer, Signal<SerialPortToRobot>>());
   private boolean isClosed;
 
   public SerialPortToRobot(String fileName, SerialPortInfo portInfo) throws PortInUseException,
@@ -61,7 +58,7 @@ public class SerialPortToRobot implements SerialPortEventListener {
     identifier = SerialPorts.getPortIdentifier(serialPortFileName);
     if (identifier == null)
       throw new RuntimeException("Port identifier " + serialPortFileName + " not found");
-    serialPort = (SerialPort) identifier.open("RLPark", 2000);
+    serialPort = (SerialPort) identifier.open("RLPark", 150);
     serialPort.addEventListener(this);
     serialPort.setFlowControlMode(portInfo.flowControl);
     serialPort.setSerialPortParams(portInfo.rate, portInfo.databits, portInfo.stopbits, portInfo.parity);
@@ -70,19 +67,15 @@ public class SerialPortToRobot implements SerialPortEventListener {
   }
 
   public void wakeupRobot() {
-    synchronized (this) {
-      serialPort.setRTS(false);
-      serialPort.setDTR(false);
-    }
+    serialPort.setRTS(false);
+    serialPort.setDTR(false);
     try {
       Thread.sleep(500);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    synchronized (this) {
-      serialPort.setRTS(true);
-      serialPort.setDTR(true);
-    }
+    serialPort.setRTS(true);
+    serialPort.setDTR(true);
   }
 
   private void setNotifiers() {
@@ -112,9 +105,7 @@ public class SerialPortToRobot implements SerialPortEventListener {
   }
 
   @Override
-  synchronized public void serialEvent(SerialPortEvent event) {
-    if (event.getEventType() == SerialPortEvent.DATA_AVAILABLE)
-      updateAvailable();
+  public void serialEvent(SerialPortEvent event) {
     Signal<SerialPortToRobot> signal = signals.get(event.getEventType());
     if (signal != null)
       signal.fire(this);
@@ -164,38 +155,16 @@ public class SerialPortToRobot implements SerialPortEventListener {
     }
   }
 
-  public void send(char[] chars) throws IOException {
-    send(DropByteArray.toBytes(chars));
+  public void send(byte[] bytes) throws IOException {
+    serialStreams.write(bytes);
   }
 
-  synchronized public void send(byte[] bytes) throws IOException {
-    for (byte b : bytes)
-      serialStreams.write(b);
+  public void send(char[] chars) throws IOException {
+    serialStreams.write(DropByteArray.toBytes(chars));
   }
 
   public void send(String command) throws IOException {
-    send(command.getBytes());
-  }
-
-  synchronized public void sendAndExpect(String command, final String returnExpected) throws IOException {
-    ReadWhenArriveAndWakeUp listener = new ReadWhenArriveAndWakeUp();
-    register(SerialPortEvent.DATA_AVAILABLE, listener);
-    send(command);
-    waitForSignal();
-    unregister(SerialPortEvent.DATA_AVAILABLE, listener);
-    if (!ExpectedIgnored && !returnExpected.equals(listener.message()))
-      throw new IOException(String.format("Return incorrect: expected <%s> was <%s>", returnExpected,
-                                          listener.message()));
-  }
-
-  private void updateAvailable() {
-    buffer = new ArrayList<Byte>();
-    try {
-      while (serialStreams.available() > 0)
-        buffer.add((byte) serialStreams.read());
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    serialStreams.write(command.getBytes());
   }
 
   public void close() {
@@ -204,70 +173,58 @@ public class SerialPortToRobot implements SerialPortEventListener {
     if (isClosed)
       return;
     isClosed = true;
-    onClosed.fire(this);
+  }
+
+  public void sendAndReceive(String command, final String expectedAnswer) throws IOException {
+    send(command.getBytes());
+    byte[] received = serialStreams.read(expectedAnswer.length());
+    if (!ExpectedIgnored && !Arrays.equals(received, expectedAnswer.getBytes()))
+      throw new IOException(String.format("Return incorrect: expected <%s> was <%s>", expectedAnswer,
+                                          new String(received)));
   }
 
   public void sendAndWait(char[] chars) throws IOException {
     sendAndWait(DropByteArray.toBytes(chars));
   }
 
-  synchronized public void sendAndWait(byte[] chars) throws IOException {
-    AlwaysWakeUpThread listener = new AlwaysWakeUpThread();
+  public void sendAndWait(byte[] chars) throws IOException {
+    final Semaphore semaphore = new Semaphore(0);
+    Listener<SerialPortToRobot> listener = new Listener<SerialPortToRobot>() {
+      @Override
+      public void listen(SerialPortToRobot eventInfo) {
+        semaphore.release();
+      }
+    };
     register(SerialPortEvent.OUTPUT_BUFFER_EMPTY, listener);
-    send(chars);
-    waitForSignal();
-    unregister(SerialPortEvent.OUTPUT_BUFFER_EMPTY, listener);
-  }
-
-  private void waitForSignal() {
+    serialStreams.write(chars);
     try {
-      wait(10000);
+      semaphore.tryAcquire(10, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-  }
-
-  public int sendAndWaitForData(char[] chars, final int dataSizeToWaitFor) throws IOException {
-    return sendAndWaitForData(DropByteArray.toBytes(chars), dataSizeToWaitFor);
-  }
-
-  synchronized public int sendAndWaitForData(byte[] bytes, final int dataSizeToWaitFor) throws IOException {
-    WakeUpThread listener = new WakeUpThread(new SerialInputCondition() {
-      private int remainingData = dataSizeToWaitFor;
-
-      @Override
-      public boolean isSatisfied(SerialPortToRobot serialPort) {
-        remainingData -= available();
-        return remainingData <= 0;
-      }
-    });
-    register(SerialPortEvent.DATA_AVAILABLE, listener);
-    send(bytes);
-    waitForSignal();
-    unregister(SerialPortEvent.DATA_AVAILABLE, listener);
-    return listener.nbDataAvailable();
-  }
-
-  public String getAvailableAsString() {
-    StringBuilder result = new StringBuilder();
-    for (Byte b : buffer)
-      result.append((char) (byte) b);
-    return result.toString();
-  }
-
-  public byte[] getAvailable() {
-    byte[] result = new byte[buffer.size()];
-    for (int i = 0; i < result.length; i++)
-      result[i] = buffer.get(i);
-    return result;
-  }
-
-  public int available() {
-    return buffer.size();
+    unregister(SerialPortEvent.OUTPUT_BUFFER_EMPTY, listener);
   }
 
   public boolean isClosed() {
     return isClosed;
+  }
+
+  public byte[] read(int size) throws IOException {
+    return serialStreams.read(size);
+  }
+
+  static public SerialPortToRobot tryOpenPort(String serialPortFile, SerialPortInfo serialPortInfo) {
+    for (int trial = 0; trial < 10; trial++) {
+      SerialPortToRobot serialPort = openPort(serialPortFile, serialPortInfo);
+      if (serialPort != null)
+        return serialPort;
+      try {
+        Thread.sleep(4000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+    return null;
   }
 
   static public SerialPortToRobot openPort(String serialPortFile, SerialPortInfo serialPortInfo) {
@@ -284,5 +241,14 @@ public class SerialPortToRobot implements SerialPortEventListener {
   static public void fatalError(String message) {
     System.err.println(message);
     System.exit(1);
+  }
+
+  public int purge() {
+    try {
+      return serialStreams.read(serialStreams.available()).length;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return 0;
   }
 }

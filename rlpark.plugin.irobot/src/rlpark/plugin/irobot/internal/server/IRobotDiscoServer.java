@@ -6,20 +6,20 @@ import java.util.LinkedList;
 import java.util.List;
 
 import rlpark.plugin.irobot.data.IRobotLabels;
+import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
-import rlpark.plugin.irobot.internal.irobot.IRobotSerialConnection;
 import rlpark.plugin.robot.internal.disco.Server;
 import rlpark.plugin.robot.internal.disco.io.DiscoSocket;
 import zephyr.plugin.core.api.signals.Listener;
 
 public class IRobotDiscoServer {
   final KeepAliveConnection keepAliveConnection;
-  private final IRobotSerialConnection serialConnection;
+  private final IRobotCreateSerialConnection serialConnection;
   private final int port;
   final List<ClientSocket> clients = Collections.synchronizedList(new LinkedList<ClientSocket>());
-  private final Listener<IRobotSerialConnection> serialClosedListener = new Listener<IRobotSerialConnection>() {
+  private final Listener<IRobotCreateSerialConnection> serialClosedListener = new Listener<IRobotCreateSerialConnection>() {
     @Override
-    public void listen(IRobotSerialConnection eventInfo) {
+    public void listen(IRobotCreateSerialConnection eventInfo) {
       close();
     }
   };
@@ -33,7 +33,7 @@ public class IRobotDiscoServer {
     }
   };
 
-  public IRobotDiscoServer(int port, IRobotSerialConnection serialConnection) {
+  public IRobotDiscoServer(int port, IRobotCreateSerialConnection serialConnection) {
     this.serialConnection = serialConnection;
     serialConnection.onClosed.connect(serialClosedListener);
     this.port = port;
@@ -75,7 +75,7 @@ public class IRobotDiscoServer {
   }
 
   public static boolean runServer(int port, String path, IRobotSerialDescriptor descriptor) {
-    IRobotSerialConnection serialConnection = new IRobotSerialConnection(path, descriptor);
+    IRobotCreateSerialConnection serialConnection = new IRobotCreateSerialConnection(path, descriptor);
     IRobotDiscoServer server = new IRobotDiscoServer(port, serialConnection);
     if (server.initializeSerialLinkCommunication())
       try {
@@ -87,7 +87,7 @@ public class IRobotDiscoServer {
     return false;
   }
 
-  public IRobotSerialConnection connection() {
+  public IRobotCreateSerialConnection connection() {
     return serialConnection;
   }
 

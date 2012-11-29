@@ -4,20 +4,20 @@ import gnu.io.SerialPortEvent;
 
 import java.io.IOException;
 
+import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
-import rlpark.plugin.irobot.internal.irobot.IRobotSerialConnection;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import zephyr.plugin.core.api.signals.Listener;
 import zephyr.plugin.core.api.synchronization.Chrono;
 
 public class SerialLinkWatchDog implements Runnable, Listener<SerialPortToRobot> {
   static private final int CheckingTime = 5000; // (ms)
-  private final IRobotSerialConnection connection;
+  private final IRobotCreateSerialConnection connection;
   private final IRobotSerialDescriptor descriptor;
   private Thread thread;
   private final Chrono lastSerialEventTime = new Chrono();
 
-  public SerialLinkWatchDog(IRobotSerialConnection connection, IRobotSerialDescriptor descriptor) {
+  public SerialLinkWatchDog(IRobotCreateSerialConnection connection, IRobotSerialDescriptor descriptor) {
     this.connection = connection;
     this.descriptor = descriptor;
   }
