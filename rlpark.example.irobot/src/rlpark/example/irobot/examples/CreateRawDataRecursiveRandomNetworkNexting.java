@@ -24,6 +24,7 @@ import rlpark.plugin.rltoys.envio.policy.Policies;
 import rlpark.plugin.rltoys.horde.Horde;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemon;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemonVerifier;
+import rlpark.plugin.rltoys.horde.functions.HordeUpdatable;
 import rlpark.plugin.rltoys.horde.functions.RewardFunction;
 import rlpark.plugin.rltoys.horde.functions.RewardObservationFunction;
 import rlpark.plugin.rltoys.math.GrayCode;
@@ -65,7 +66,10 @@ public class CreateRawDataRecursiveRandomNetworkNexting implements Runnable {
     int stateVectorSize = stateUpdate.stateSize();
     List<PredictionDemon> demons = createNextingDemons(rewardFunctions, Gammas, MaxDensity * stateVectorSize,
                                                        stateVectorSize);
-    horde = new Horde(demons, rewardFunctions);
+    horde = new Horde();
+    horde.demons().addAll(demons);
+    for (RewardFunction rewardFunction : rewardFunctions)
+      horde.addBeforeFunction((HordeUpdatable) rewardFunction);
     verifiers = createDemonVerifiers(demons);
     WeightSorter sorter = new WeightSorter(extractLinearLearners(demons), 0, representation.outputSize);
     discovery = new RepresentationDiscovery(random, representation, sorter, prototype, NetworkOutputVectorSize / 10, 5);

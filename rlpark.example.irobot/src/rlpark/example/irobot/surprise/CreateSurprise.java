@@ -24,6 +24,7 @@ import rlpark.plugin.rltoys.horde.Surprise;
 import rlpark.plugin.rltoys.horde.demons.Demon;
 import rlpark.plugin.rltoys.horde.demons.PredictionDemon;
 import rlpark.plugin.rltoys.horde.demons.PredictionOffPolicyDemon;
+import rlpark.plugin.rltoys.horde.functions.HordeUpdatable;
 import rlpark.plugin.rltoys.horde.functions.RewardFunction;
 import rlpark.plugin.rltoys.horde.functions.RewardObservationFunction;
 import rlpark.plugin.rltoys.math.vector.RealVector;
@@ -71,7 +72,11 @@ public class CreateSurprise implements Runnable {
           demons.add(newOffPolicyPredictionDemon(rewardFunction, gamma, targetPolicy));
       }
     }
-    return new Horde(demons, rewardFunctions);
+    Horde horde = new Horde();
+    horde.demons().addAll(demons);
+    for (RewardFunction rewardFunction : rewardFunctions)
+      horde.addBeforeFunction((HordeUpdatable) rewardFunction);
+    return horde;
   }
 
   private PredictionOffPolicyDemon newOffPolicyPredictionDemon(RewardFunction rewardFunction, double gamma,
