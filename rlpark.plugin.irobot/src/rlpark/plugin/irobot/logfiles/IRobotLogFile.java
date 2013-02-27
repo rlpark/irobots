@@ -9,14 +9,14 @@ import rlpark.plugin.robot.interfaces.RobotLog;
 import rlpark.plugin.robot.observations.ObservationVersatile;
 import rlpark.plugin.robot.observations.ObservationVersatileArray;
 import zephyr.plugin.core.api.internal.logfiles.LogFile;
-import zephyr.plugin.core.api.monitoring.annotations.Monitor;
+import zephyr.plugin.core.api.monitoring.abstracts.DataMonitor;
+import zephyr.plugin.core.api.monitoring.abstracts.MonitorContainer;
+import zephyr.plugin.core.api.monitoring.abstracts.Monitored;
 
 @SuppressWarnings("restriction")
-public class IRobotLogFile implements RobotLog {
+public class IRobotLogFile implements RobotLog, MonitorContainer {
   public static final String Extension = "irobotlog";
-  private ObservationVersatile lastReceived = null;
-
-  @Monitor(emptyLabel = true)
+  ObservationVersatile lastReceived = null;
   private final LogFile logfile;
 
   public IRobotLogFile(String filepath) {
@@ -65,5 +65,21 @@ public class IRobotLogFile implements RobotLog {
   public ObservationVersatileArray nextStep() {
     step();
     return new ObservationVersatileArray(Utils.asList(lastReceived));
+  }
+
+  @Override
+  public void addToMonitor(DataMonitor monitor) {
+    String[] labels = logfile.labels();
+    for (int i = 0; i < labels.length; i++) {
+      final int index = i;
+      monitor.add(labels[index], new Monitored() {
+        @Override
+        public double monitoredValue() {
+          if (lastReceived == null)
+            return 0;
+          return lastReceived.doubleValues()[index];
+        }
+      });
+    }
   }
 }
