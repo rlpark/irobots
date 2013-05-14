@@ -1,4 +1,4 @@
-package rlpark.plugin.irobot.internal.create;
+package rlpark.plugin.irobot.internal.descriptors;
 
 import gnu.io.PortInUseException;
 import gnu.io.SerialPortEvent;
@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TooManyListenersException;
 
-import rlpark.plugin.irobot.internal.create.SerialListeners.AlwaysWakeUpThread;
-import rlpark.plugin.irobot.internal.create.SerialListeners.WakeUpThread;
+import rlpark.plugin.irobot.internal.descriptors.SerialListeners.AlwaysWakeUpThread;
+import rlpark.plugin.irobot.internal.descriptors.SerialListeners.WakeUpThread;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import rlpark.plugin.robot.internal.disco.drops.DropByteArray;
 import zephyr.plugin.core.api.signals.Signal;

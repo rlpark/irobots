@@ -5,11 +5,6 @@ import gnu.io.SerialPort;
 import java.io.IOException;
 
 import rlpark.plugin.irobot.data.IRobotLabels;
-import rlpark.plugin.irobot.internal.create.ChecksumNode;
-import rlpark.plugin.irobot.internal.create.DataNode;
-import rlpark.plugin.irobot.internal.create.HeaderNode;
-import rlpark.plugin.irobot.internal.create.SerialLinkStateMachine;
-import rlpark.plugin.irobot.internal.create.SerialPortToCreate;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot.SerialPortInfo;
 import rlpark.plugin.rltoys.utils.Utils;

@@ -2,7 +2,7 @@ package rlpark.plugin.irobot.internal.server;
 
 import java.io.IOException;
 
-import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
+import rlpark.plugin.irobot.internal.descriptors.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
 
 public class IRobotServer {

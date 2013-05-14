@@ -1,10 +1,8 @@
-package rlpark.plugin.irobot.internal.create;
+package rlpark.plugin.irobot.internal.descriptors;
 
 
 import java.io.IOException;
 
-import rlpark.plugin.irobot.internal.descriptors.IRobotObservationReceiver;
-import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.robot.internal.disco.datagroup.DropScalarGroup;

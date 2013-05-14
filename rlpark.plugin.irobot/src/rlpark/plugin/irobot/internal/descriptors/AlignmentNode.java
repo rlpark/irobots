@@ -1,4 +1,4 @@
-package rlpark.plugin.irobot.internal.create;
+package rlpark.plugin.irobot.internal.descriptors;
 
 import rlpark.plugin.robot.internal.disco.drops.DropByteArray;
 

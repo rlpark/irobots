@@ -1,9 +1,9 @@
 package rlpark.plugin.irobot.robots;
 
 import rlpark.plugin.irobot.data.IRobotLabels;
-import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.CreateSerialDescriptor;
 import rlpark.plugin.irobot.internal.descriptors.DropDescriptors;
+import rlpark.plugin.irobot.internal.descriptors.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.irobot.IRobotDiscoConnection;
 import rlpark.plugin.irobot.internal.server.IRobotDiscoServer;
 import rlpark.plugin.robot.observations.ObservationReceiver;

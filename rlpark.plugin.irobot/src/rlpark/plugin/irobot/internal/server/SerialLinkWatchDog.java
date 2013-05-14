@@ -4,7 +4,7 @@ import gnu.io.SerialPortEvent;
 
 import java.io.IOException;
 
-import rlpark.plugin.irobot.internal.create.IRobotCreateSerialConnection;
+import rlpark.plugin.irobot.internal.descriptors.IRobotCreateSerialConnection;
 import rlpark.plugin.irobot.internal.descriptors.IRobotSerialDescriptor;
 import rlpark.plugin.irobot.internal.serial.SerialPortToRobot;
 import zephyr.plugin.core.api.signals.Listener;

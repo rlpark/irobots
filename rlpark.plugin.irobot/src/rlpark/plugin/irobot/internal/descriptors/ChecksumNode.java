@@ -1,4 +1,4 @@
-package rlpark.plugin.irobot.internal.create;
+package rlpark.plugin.irobot.internal.descriptors;
 
 import java.util.List;
 
