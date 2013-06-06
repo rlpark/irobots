@@ -102,7 +102,6 @@ abstract public class IRobotEnvironment extends RobotEnvironment implements Moni
     return (short) Math.min(maxAction, Math.max(-maxAction, value));
   }
 
-  @Override
   public void sendAction(Action a) {
     sendAction((CreateAction) a);
   }

@@ -71,6 +71,7 @@ public class IRobotCreateSerialConnection implements IRobotObservationReceiver {
     return timeSinceReset == null || timeSinceReset.getCurrentChrono() > 3.0;
   }
 
+  @Override
   synchronized public void close() {
     serialPort.close();
     notifyAll();

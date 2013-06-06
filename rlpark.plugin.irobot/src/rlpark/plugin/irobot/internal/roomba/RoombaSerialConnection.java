@@ -231,4 +231,9 @@ public class RoombaSerialConnection implements IRobotObservationReceiver {
   public Legend legend() {
     return sensors.legend();
   }
+
+  @Override
+  public void close() {
+    serialPort.close();
+  }
 }
