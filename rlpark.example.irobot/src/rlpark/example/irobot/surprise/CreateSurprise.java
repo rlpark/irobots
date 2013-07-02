@@ -16,7 +16,7 @@ import rlpark.plugin.rltoys.envio.actions.Action;
 import rlpark.plugin.rltoys.envio.observations.Legend;
 import rlpark.plugin.rltoys.envio.observations.ObsFilter;
 import rlpark.plugin.rltoys.envio.observations.Observation;
-import rlpark.plugin.rltoys.envio.policy.ActionPolicy;
+import rlpark.plugin.rltoys.envio.policy.SingleActionPolicy;
 import rlpark.plugin.rltoys.envio.policy.Policies;
 import rlpark.plugin.rltoys.envio.policy.Policy;
 import rlpark.plugin.rltoys.horde.Horde;
@@ -42,8 +42,8 @@ public class CreateSurprise implements Runnable {
       "DriveDistance", "DriveAngle", "BatteryCurrent", "BatteryCharge", "WallSignal", "CliffSignal",
       "ConnectedHomeBase", "OIMode", "WheelRequested" };
   static final private double[] Gammas = new double[] { .0, 0.9, 0.99 };
-  static final private Policy[] TargetPolicies = new Policy[] { new ActionPolicy(CreateAction.SpinLeft),
-      new ActionPolicy(CreateAction.Forward) };
+  static final private Policy[] TargetPolicies = new Policy[] { new SingleActionPolicy(CreateAction.SpinLeft),
+      new SingleActionPolicy(CreateAction.Forward) };
   static final private double Lambda = .7;
   final private IRobotEnvironment robot = new CreateRobot();
   final private Clock clock = new Clock("Surprise");
